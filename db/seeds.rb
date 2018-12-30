@@ -9,13 +9,31 @@
 
 Product.delete_all
 
-3.times {Product.create!(title: 'Seven mobile apps in seven weeks',
+Product.create!(title: 'Seven mobile apps in seven weeks',
 
 	description: %{<p><em>Native Apps, Multiple Platforms</em>
 		"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
 		</p>},
 	image_url: '7apps.jpg',
 	price: 26.00)
-}
+
+
+Product.create!(title: 'Great Title',
+
+	description: %{<p><em>Native Apps, Multiple Platforms</em>
+		"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
+		</p>},
+	image_url: '2.jpg',
+	price: 26.00)
+
+Product.create!(title: 'Another great title',
+
+	description: %{<p><em>Native Apps, Multiple Platforms</em>
+		"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
+		</p>},
+	image_url: '3.jpg',
+	price: 26.00)
+
+
 
 puts " 3 items created "
