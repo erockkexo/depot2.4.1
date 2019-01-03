@@ -1,0 +1,794 @@
+Eric's Notes
+
+
+
+-------------
+
+Chapter 2 - Basic Application
+
+-------------
+
+
+We basically did an instant gratification application to showcase what rails is capable of doing. 
+
+	Rails accepts incoming requests from a browser. Decodes the request to find a controller, and calls an action method to that 
+	controller. The controller then invokes a particular view to display the result to the user. 
+
+How an application in Rails works; 
+
+	A user navigates to an application --> https://localhost:3000/say/hello
+
+	Rails then matches the route pattern. In our example the "say" part is taken to be the name of the controller
+	so Rails creates a new instance of the Ruby SayController class (--> app/controllers/say_controller.rb)
+
+	"Hello" identifies an action. Rails invokes a method of that name in the controller. In our case
+	this method invokes a TIme object holding the current time and tucks it into the @time instance variable. 
+
+	Rails looks for a template to dispaly the data. It searches in the apps/views folder to find a subdirectory 
+	with the same name as the controller (in this case "say"), and then for a file named after the action
+	(in this case --> /app/views/say/hello.html.erb)
+
+	Rails process this file through the ERB templating system, executing any embedded Ruby and substituing the values set up by 
+	the controller. 
+
+	The result is returned to the browser, and Rails finishes processing this request. 
+
+-------------
+
+Chapter 3 - Architecture of Rails Applications -- MVC
+
+-------------
+
+
+Model 	- reponsible for maintaining the state of an application 
+		- it enforces all the business rules that apply to that data 
+
+View 	- generating user interfaces, normally based on data in the model 
+		- Never handles incoming data, it's work is done when the data is displayed 
+
+Controllers 
+		- receive events from the outside world / like user input, 
+		- interacts with the model and display an appropriate view to the user 
+
+
+How these pieces fit together: 
+
+		- First an incoming request is sent to the router in the routes.rb file. It works out where the request should be 
+		sent to 
+			- This phase ultimately identifies a particular method somwhere in the controller code. 
+			- The action might look at data in teh request, it might interact with the model 
+				and it might invoke other actions. The action eventually prepares info for the view 
+				which renders to the user. 
+
+		- The request contains a path and a method (POST, GET, PUT, PATCH, and DELETE)
+
+		- The controller tells Rails what to do, and the Model knows how to do it. 
+
+
+Object-Relational Mapping (ORM)
+
+		- ORM maps database tables to classes. 
+			- A table called "Orders" means there is a class named "Order"
+			- Each row is considered an object of the Order class. 
+			- Each column has attributes associated with each row. 
+				- i.e. each order has the attribute of customer_id, amount, sales tax, etc. 
+			- Rails then wraps these database tables with a set of class-level methods to perform table-level operations
+				- i.e. 	order = Order.find(1)       # order is equal to our first (1) order
+						puts "Customer #{order.customer_id}, amount = $#{order.amount}"
+			- ORM maps tables to classes, rows to objects, and columns to attributes of those objects. 
+				- Class methods are use to perform table-level operations 
+
+Active Records 
+
+		- The ORM supplied with Rails 
+		- Provides us a lot of methods preconfigured. 
+
+Action Pack 
+		
+		- Support for views and controllers have been rolled into a single component called Action Pack 
+		- View support
+			- In it's simplest form, views are just a chunck of HTML code with some dynamic content 
+				created by the action method in the controller. 
+		- Controller Support
+			- Logical center of the application 
+
+
+
+
+
+-------------
+
+Chapter 5 - Creating the Depot Application 
+
+-------------
+
+Here we just talked about setting up the business logic of the "Depot Application"
+
+
+-------------
+
+Chapter 6 - Creating the Depot Application 
+
+-------------
+
+The first step to any application is creating the database and generating the application files
+
+	--> $ rails new depot      #this creates the new application called "Depot"
+
+Next we need to generate a Rails mdoel that lets our application use that table, a number of views to make 
+up that interface and a controller to orchestrate that application. Note: Always use the singular form of the 
+class names 
+	- I.e. Product -> because a Rails model then is mapped to a database table with the pluralized name of the model
+		which in this case is "products"
+
+	--> $ rails generate scaffold Product title:string description:text image_url:string price:decimal
+
+This generates a lot of files, including a migration file. Migration files represents a change we want to make to uor
+database as a whole or to the data contained within the database. It's expressed in a source file that is database-independent.
+
+To apply the database migration. This will now create a databse table named "products".  
+
+	--> $ rails db:migrate 
+
+We then added some scss styling to the products view page
+
+
+
+-------------
+
+Chapter 7 - Testing the Depot Application 
+
+-------------
+
+This chapter was about validation and unit testing. 
+We put validation in the model layer because everything that goes into or comes from the Database goes through the model layer
+first. 
+The validates() method is the standard Rails validator. It looks for the presence of something. 
+
+	--> app/models/product.rb 
+
+	validates :title, :description, :image_url, presence: true
+
+Note that presence: true says to ruby that the contents of each of these attributes is not empty. So a user can not createa a product 
+entry with out filling out any of these parameters. 
+
+Then we did testing which is very important. We first create assertions that expect things to be true. 
+
+And then we talked about using Test Fixtures. Fixtures are environments where you can run tests, and are located in teh text/fixtures 
+directory. They are YAML format, and the base name of the file must match the name of a database table. In this case the model -> 
+product, the YAML file is products.yml. 
+
+In the fixture files each row is given a name. It has no significance as far as the database is concerned, but it can be referenced.
+Also we must use spaces, and not tabs. All lines must have the same indentation. 
+
+Back in the test files, we can specify which fixture we want to run our tests against using the fixtures() method. 
+	--> fixtures :products
+
+Each test method gets a freshly initialized table in teh test database, loaded from the fixtures we provide. 
+
+
+
+-------------
+
+Chapter 8 - Displaying the catalog
+
+-------------
+
+To create the catalog, we first started by generating a second controller to interact with our paying customers. 
+	--> $ rails generate controller Store index
+
+This creates the store_controller.rb file, with a single method index(). We can access every product we have ever made by adding in the instance 
+variable @products and setting it to call the Product model. 
+
+	--> app/controllers/store_controller.rb
+		def index
+			@products = Product.order(:title)     #list based on title alphabetically
+		end             --------------------
+
+We also did some styling in the style sheets. 
+
+###Important###
+
+Caching of Partial results. 
+The only time we need to rerender somethng is when it is updated/changed or a new product is added. All of the other items do not need
+to be rerendered so we should invoke cacheing so that we don't tax the server more than it needs to be. To do that we mark the 
+sections of our template that need to be updated if an update occurs. We then identify the complete set of entries that should be 
+cached, and then we cache the newly updated entry. 
+
+	--> app/views/store.html.erb
+
+  <% cache @products do %>                           # caches everything once the item is created
+	<% cache @products.each do |product| %>          
+	  <% cache @products do %>
+		  	<li>
+		  		<%= image_tag(product.image_url) %>
+		  		<h2><%= product.title %></h2>
+		  		<p><%= sanitize(product.description) %></p>
+		  		<div class="price"><%= number_to_currency(product.price) %></div>
+		  	</li>
+	  <% end -%>
+    <% end -%>
+  <% end -%>
+
+
+
+-------------
+
+Chapter 9 - Shopping Cart 
+
+-------------
+
+
+Probably the hardest chapter so far. We added a shopping cart to our application. To keep track of the items a customer
+would like to purchase we need to create a databas and store its unique identifier, cart.id in the session. When a request comes 
+in we can rescue the identifier and use it to find the cart in the databse. 
+	--> $ bin/rails generate scaffold Cart
+	--> $ bin/rails db:migrate
+
+Rails makes the current session look like a hash to the controller, so we will store the ID of the cart in the session by indexing it
+with the cart_id symbol: 
+	--> app/controllers/concerns/current_cart.rb
+
+	module CurrentCart
+
+	  private
+	    def set_cart
+	      @cart = Cart.find(session[:cart_id])
+      	rescue ActiveRecord::RecordNotFound
+      	  @cart = Cart.create
+      	  session[:cart_id] = @cart.id
+      	end
+  	end
+
+the set_cart() method starts by getting the cart_id from the session object and then attempts to find a cart matching this ID. If it 
+does not find one (activerecord::RecordNotFound) it creates a new Cart and stores it's cart ID into the session. We also put this 
+in a concerns folder so that we can mix it into other controllers later down the road. 
+
+
+A cart contains a set of Products. So we will put something called LineItems into each cart. The LineItem model references products
+and belongs to a cart. That is to say, a LineItem can not exist outside of a cart. 
+	--> $ rails generate LineItem product:references cart:belongs_to
+
+Now our database has somewhere to start the references amongst the products, carts and line items. In the line_item model, we see the 
+belongs_to() accessor methods being invoked. This tells ruby that the rows in LineItem are childs of rows in Cart and Product tables. 
+
+	*** Use belongs_to if a table has any columns whose values consist of ID values for another table (has foreign keys) the 
+	corresponding model should have a belongs_to for each table.***
+
+These accessor methods allow us to navigate across model objects. Because LineItem belongs_to Product, we can access attributes about
+product tables. 
+	--> example
+	li = LineItem.find(...)
+	puts "This line item is for #{li.product.title}"
+
+Now we must add the inverse side of things in order to traverse both directions. 
+	--> app/models/cart.rb
+	class Cart < ApplicationRecord
+	  has_many :line_items, dependent: :destroy
+    end
+
+The has_many() method says is prety self-explanatory, a cart has many line items. These are linked because each line item contains 
+a reference to the Cart's ID. The dependent destroy part means that if a Cart is destroyed, the line items are destroyed to. 
+This is logical because a LineItem can not exist with out a Cart. 
+
+Now to add the has_many() method to the Product model. This one is different, because we are building a controll(logic controll that is)
+that prevents the product from being destroyed if someone is trying to purchase it. I can not understand why you would want to do it 
+like this. 
+	--> app/models/product.rb
+    
+    has_many :line_items
+    before_destroy :ensure_not_referenced_by_any_line_item
+
+	  private
+
+	    # ensure that there are no line items referencing this product
+	    def ensure_not_referenced_by_any_line_item
+	      unless line_items.empty?
+	        errors.add(:base, 'Line Items present')
+	        throw :abort
+	      end
+	    end
+	end
+
+-------
+
+Now to build a add to cart button => Fina fuckin ly lmao
+We find index, show, new, edit, create, update, and destroy are actions already generated by the scaffolding. In this case, 
+we are going to create a line item. Not new(), because the new implies we going to solicit a form for input for a subsequent
+create action. The HTTP method we need is POST, because we are creating something. To utilize the POST method, we are going 
+to use the button_to() method, because link_to() methods are usually for GET HTTP methods. 
+
+The one concern tho, is how will the line_items_path know what product to add to our cart? We solve this by adding the 
+:product_id option to the line_items_path() call. 
+	--> app/views/store/index.html.erb
+	<%= button_to 'Add to Cart', line_items_path(product_id: product) %>
+
+Now that Rails knows what product_id we are adding when we push the button, we need to aslo tell the line_items_controller.rb to 
+expect a product_id parameter. 
+	--> app/controllers/line_items_controller.rb
+	include CurrentCart
+	before_action :set_cart, only: [:create]
+
+The only thing left is to add some code to the create() method 
+	--> app/controllers/line_items_controller.rb
+
+	  def create
+	    product = Product.find(params[:product_id])
+    	@line_item = @cart.line_items.build(product: product)
+    	reset_session
+	    respond_to do |format|
+	      if @line_item.save
+	        format.html { redirect_to @line_item.cart, notice: 'Line item was successfully created.' }
+	  end
+
+The first line of code product = Product.find(params[:product_id]). 
+This holds all of the parameters passed in an HTTP request. We store these parameters in a local variable, because it won't be 
+passed to the views. 
+
+We then pass the product we found into @cart.line_items.build. This creates a new relationship to be built between the @cart
+object and the product. We then save these results into an instance variable @line_item. To finalize, we then add some HTML
+to our views. 
+	--> app/views/cart/show.html.erb
+
+		<% if notice %>
+		  <aside id="notice"><%= notice %></aside>
+		<% end -%>
+
+		<h2>Your cart has been updated!</h2>
+		<ul>
+		  <% @cart.line_items.each do |item| %>
+		    <li><%= item.product.title %></li>
+		  <% end -%>
+		</ul>
+
+
+-------------
+
+Chapter 10 - Smarter Shopping Cart 
+
+-------------
+
+Now we want to display the lineitems in a way that combines them. We start by applying the scaffolding for a db migration:
+	--> $ rails generate migration add_quantity_to_line_items quantity:integer
+
+By this command Rails can tell we are adding new columns to the LineItems table. It knows this because it recognizes two patterns;
+	RemoveXXXfromTABLE
+	AddXXXtoTABLE
+
+Followed by the key -> value pair afterwords. After running the migration (to add the columns) we then have to add a smart
+add method to our models. 
+	--> app/models/cart.rb
+
+	def add_product(product)
+		current_item = line_items.find_by(product_id: product.id)
+		if current_item
+			current_item.quantity += 1
+		else
+			current_item = line_items.build(product_id: product.id)
+		end
+		current_item
+	end
+
+	def total_price
+		line_items.to_a.sum { |item| item.total_price }
+	end
+
+This code creates a method called add_product where we define the current_item in the first line. If it exists we increment it by 
+one, if it doesn't exist then we create a new entry. We also need to modify our line_items_controller to be able to use this new 
+method. 
+	--> app/controller/line_item_controller.rb
+
+Our app still doesn't know to combine the lineitems when they already exist. The next step is to create a migration to handle
+these combinations. 
+	--> $ rails generate migration combine_items_in_cart
+
+	--> db/2018_combine_items_in_cart
+
+	class CombineItemsInCart < ActiveRecord::Migration[5.1]
+	  def up
+	    # replace multiple items for a single product in a cart with a
+	    # single item
+	    Cart.all.each do |cart|
+	      # count the number of each product in the cart
+	      sums = cart.line_items.group(:product_id).sum(:quantity)
+
+	      sums.each do |product_id, quantity|
+	        if quantity > 1
+	          # remove individual items
+	          cart.line_items.where(product_id: product_id).delete_all
+
+	          # replace with a single item
+	          item = cart.line_items.build(product_id: product_id)
+	          item.quantity = quantity
+	          item.save!
+	        end
+	      end
+	    end
+	  end
+	  def down
+	    # split items with quantity>1 into multiple items
+	    LineItem.where("quantity>1").each do |line_item|
+	      # add individual items
+	      line_item.quantity.times do 
+	        LineItem.create(
+	          cart_id: line_item.cart_id,
+	          product_id: line_item.product_id,
+	          quantity: 1
+	        )
+	      end
+
+	      # remove original item
+	      line_item.destroy
+	    end
+	  end
+	end
+
+
+----
+
+Handling Errors
+
+Our app throws an error when people navigate to a bad URL. This isn't very professional. We handle these errors in two ways; 
+1. Logging the fact into an internal log file using the Rails logger facility.
+2. We'll residplay the catalog page along with a short message -> for user experience. 
+
+Rails has a convenient way of dealing with errors and error reporting. It creates a structure called a "flash" which 
+you can store stuff as your process a request. The contents of the flash are available to the next request in this session before 
+being deleted automaticaly. 
+
+
+
+-------------
+
+Chapter 11 - Adding a Dash of Ajax
+
+-------------
+
+
+Ajax makes a browser suck less. It stands for Asyncynchronous JavaScript and XML. It kind of allows for live updates with out
+having to refresh the page every fucking time. How our page works now is the cart is rendered by the show action in the CartController
+and the corresponding cart.html.erb views file. Instead we want to move it to the sidebar and to do that we are going to use partials. 
+
+A partial is a method for views. It's like a chunk of code that we can pass variables to so that we can render different results. 
+Here we are going to put our cart in a partial. We first remove the loop from the cart show page and put it in it's only partial.
+Note: the _line_item.html.erb file must be named this because it's going to look for it in the views folder.  
+	--> app/views/carts/show.html.erb
+	<%= render @cart %>
+
+	--> app/views/line_items/_line_item.html.erb
+    <% @cart.line_items.each do |line_item| %>
+	  <tr>
+        <td class="quantity"><%= line_item.quantity %></td>
+        <td><%= line_item.product.title %></td>
+        <td class="price"><%= number_to_currency(line_item.total_price) %></td>
+      </tr>
+    <% end %>
+
+And now we can create another partial called _cart which looks the same as the regular cart show file. This is so we can pass the 
+entire cart to the navbar on the application layout folder. 
+	--> app/views/cart/show.html.erb
+	<%= render @cart %>
+
+	--> app/views/cart/_cart.html.erb
+	<article>
+  <% if notice %>
+    <aside id="notice"><%= notice %></aside>
+  <% end %>
+
+
+  <h2>Your Cart</h2>
+  <table>
+
+    <%= render(cart.line_items) %>
+    <tfoot>
+      <tr>
+        <th colspan="2">Total:</th>
+        <td class="price"><%= number_to_currency(cart.total_price) %></td>
+      </tr>
+    </tfoot>
+  </table>
+  <%= button_to 'Empty cart', cart,
+                method: :delete,
+                data: { confirm: 'Are you sure?' } %>
+
+
+	</article>
+
+Note that now we are able to pass the entire shopping cart to the navbar, and apply AJAX and Javascript to it in an easy and maintanable
+method. 
+	--> app/views/layouts/application.html.erb
+
+	  <nav class="side_nav">
+>       <div id="cart" class="carts">
+>         <%= render_if @cart && @cart.line_items.any?, @cart %>      <
+>       </div>
+
+        <ul>
+          <li><a href="/">Home</a></li>
+      
+Right now we are invoking the layout while look at the store's index action, and that action doesn't currently set the @cart. 
+	--> app/controller/store_controller.rb
+
+	class StoreController < ApplicationController
+	include CurrentCart
+	before_action :set_cart
+
+One last step, and that's to get the page to redirect back to the storefront rather than a new page like it currently does: 
+	--> app/controller/line_items_controller.rb
+
+  def create
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product)
+
+    respond_to do |format|
+      if @line_item.save
+>>      format.html { redirect_to root_url, notice: 'Photo added to cart!' }
+
+And now it's on the storefront page :D!
+
+------
+
+
+Now let's make it less shitty. 
+Ajax lets us write code that runs in the browser and interacts with our server-based application. What we would like to do is
+invoke the server create() action but only have to update and replace the cart HTML with out refreshing the page.
+
+The first step is we have to create a Ajax request instead of the button_to method we are using in our shopping cart. And to do 
+that we use the remote: true flag. 
+	--> app/views/store/index.html.erb
+        <%= button_to 'Add to Cart', line_items_path(product_id: product), remote: true %>
+                                                                           -------------
+The next step is to have the server send a response to this request. The plan is to create the updated HTML and replace it on 
+the currently being viewed webpage. We will break this into several steps. 
+
+The first step is to stop the create action from redirecting to the index display if the request is for JavaScript. 
+	--> app/controllers/line_item_controller.rb
+	def create
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to root_url, notice: 'Photo added to cart!' }
+>>      format.js  
+        ---------
+
+This command format.js is a method that tells Rails to find a JavaScript template called create.js.erb or create.js.coffee. 
+It looks for that because this is in the create method we just defined. We don't have a create.js.coffee file yet, so we will
+create one in the line_items directory. There we will tell the browser to handle incoming updated HTML. 
+	--> app/views/line_items/create.js.coffee
+	cart = document.getElementById("cart")
+	cart.innerHTML = "<%= j render(@cart) %>"
+
+The first line of code basically selects any items with the ID of "cart" which we set at the beginning fo this chapter. 
+
+The second line of code is a bitch to understand. The content of cart.innerHTML is formed by a call to the render() method on 
+the cart() object. The j is an escape javascript method, which converts the render(@cart) HTML into a format readable by 
+JavaScript. The rendered content is then assigned to the innerHTML that's displayed on the page. Thus updating every time 
+we update the cart. :D
+
+---
+
+We then highlite the changes. We first create an animation in the SCSS files. Then we have to define what item we want to apply 
+the animation to. To do that we set the formatting in the line_item_controller to set the current item to the line item being 
+passed. 
+	--> app/controllers/line_item_controller.rb
+	def create
+    product = Product.find(params[:product_id])
+    @line_item = @cart.add_product(product)
+
+    respond_to do |format|
+      if @line_item.save
+        format.html { redirect_to root_url, notice: 'Photo added to cart!' }
+>>      format.js { @current_item = @line_item }
+					--------------------------
+
+This sets the current item to the line_item being created. Finally we added it to our line_item template so that our animation 
+renders on the page when ever we create a new line item. 
+	--> app/views/layouts/_line_item.html.erb
+	<% if line_item == @current_item %>
+		<tr class="line-item-highlite">
+	<% else %>
+		<tr>
+	<% end -%>
+Which basically says if the line item is the currently added line item, it has a class of line-item-highlite. This class
+is the class with the keyframe animations so the SCSS is applied to it. It also means that every item isn't continually flashing
+green when we keep adding items. 
+
+
+
+
+-------------
+
+Chapter 11 - Adding a Dash of Ajax
+
+-------------
+
+
+MISSING IMPORTANT SHIT HERE GOD DMAN IT. 
+
+
+
+
+
+-------------
+
+Chapter 12 - Check out
+
+-------------
+
+
+Omg where do I begin
+
+An order is a set of line items along with the details of the purchase transaction. 
+So it's like a bunch of products + the purchase transaciton like whot hte fuck bought it. As it stands our Carts model
+already has the lineitems accepted into it. All we need to do is add a order_id column to our database :D
+
+So you know we need to build a database migration to handle these updates:
+	--> $ rails generate scaffold Order name:string address:text email:string pay_type:integer
+	--> $ rails generate migration add_order_to_line_item order:references
+
+Notice that pay_type is an integer. We can set types of payments to different descrete numbers. And we do this because it's 
+easier to do dynamic forms, keep track of records, and also allows to abstract away from databases through a foreign key. 
+We use the enum declration and place them in the order model page. 
+	--> app/model/order.rb
+	enum pay_type: {
+		"Check"				=> 0, 
+		"Credit Card"		=> 1,
+		"Purchase Order"	=> 2
+	}
+
+The enum declaration lets us assign values to these numbers. 
+
+Now that we have created the migrations we apply them: 
+	--> $ rails db:migrate
+
+
+----------------
+
+Creating the Order Capture Form ********************************
+(I think we can use this for the instance page)
+
+Now we start the check out process
+
+So we are going to need a button (to allow the user to start the process.) This process will link to a new action in our 
+order controller. Adding it to our HTML cart partial:
+	--> app/views/_cart.html.erb
+	<%= button_to 'Checkout', new_order_path, method: :get, class: "checkout" %>
+
+To complete this action, the first thing we are going to do is check if there's actually shit in here. This is to make the 
+logic clean btw.   
+
+	--> app/controllers/orders_controller.rb
+  class OrdersController < ApplicationController
+  include CurrentCart
+  before_action :set_cart, only: [:new, :create]
+  before_action :ensure_cart_isnt_empty, only: :new
+  before_action :set_order, only: [:show, :edit, :update, :destroy]
+
+  Private
+    def ensure_cart_isnt_empty
+      if @cart.line_items.empty?
+        redirect_to root_url, notice: 'Your cart is empty'
+      end
+    end
+
+The next logical step is we want to present the users with a form that they can input their data into it. SO it's kind of like
+when they hit the "complete button" we want to give them a place to give us their payment info and move on with our lives. 
+
+This is where Helper Methods come into play, in specific the _form.html.erb helper method. These _form.html.erb files are 
+generated and used when we want to create a new object in a given class, in this case the order class. Rails generates for us
+a form with the inputs that we created when we generated the scaffolding. 
+	Name
+	Email
+	Payment Type
+
+So rails takes these attributes, and creates a form for each attribute that the user can then input their personal data. 
+What's also special is you can change the HTML formatting on the page for styling and what not. You can then use ERB to 
+manipulate the forms and because we declared the model: @order it knows where to put the user generated info into the 
+database. 
+
+One thing to know, RAILS needs to know the names and the values inputted from the user. I.E. we need to put f.label :name, 
+f.text_field        so that rails knows hey your inputing this text into the name attribute of the @order class. 
+
+*****
+One last thing we need to do is add validations to the order model because we dont want to let malicious users sumitting form 
+data directly to the application and bypassing our forms. As it stands, if the user sets an unknown payment type they could 
+concievably get our products for free ********* 
+	--> app/models/orders.rb
+	validates :name, :address, :email, presence: true
+	validates :pay_type, inclusion: paytypes.keys
+
+
+--------
+
+Capturing Order Details
+
+What's important here: 
+	1. Capture the values from the form to populate a new Order model object
+	2. Add line_items from our cart to the order
+	3. Validate and save the order -> if it fails go back to the right page
+	4. Deleting the cart, sending a confirmation that the order has been completed :D
+
+We are going to add the create() action in the controller. It has to do the above tasks all in one shot. 
+
+To do this we start by updating the relationships in the models between teh LineItem and the Orders. 
+	--> app/models/line_item.rb
+	belongs_to :order, optional: true
+	belongs_to :product, optional: true
+
+	--> app/models/order.rb
+	has_many :line_items, dependent: :destroy             #destroy line items when order destroyed
+
+And now we are applying this new logic to our order controller under the create action. 
+	--> app/controllers/order_controller.rb
+	def create
+ >  @order = Order.new(order_params)
+ >  @order.add_line_items_from_cart(@cart)
+
+    respond_to do |format|
+      if @order.save
+  >     Cart.destroy(session[:cart_id])
+  >     session[:cart_id] = nil
+  >     format.html { redirect_to root_url, notice: 'Thank you for your order!' }
+        format.json { render :show, status: :created, location: @order }
+
+Here we started by creating a new Order object and initalized it from the form data. The next line takes in the 
+items that are already stored in our cart from previous actions. Here is the method:
+	--> app/models/order.rb
+	def add_line_items_from_cart(cart)
+	  cart.line_items.each do |item|
+	    item.cart_id = nil
+	    line_items << item
+      end
+    end
+
+Now when ever a customer submits an order, it destroys the cart (which is good) but saves the order to a database so we can present 
+to the customer in a customer facing view. 
+
+
+------------
+
+
+Atom Feed
+
+
+
+
+
+
+
+
+
+
+
+-------------
+
+Chapter 13 - Dynamic Forms
+
+-------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
