@@ -22,4 +22,9 @@
 
 .byebug_history
 
-erics_notes
+erics_notes/public/packs
+/public/packs-test
+/node_modules
+yarn-debug.log*
+.yarn-integrity
+.DS_Store
